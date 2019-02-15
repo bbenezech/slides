@@ -1,7 +1,9 @@
-# slides
-Skello slidezzzzz
+# Skello slidezzzzz
 
-- [Blank](/blank)
-- [Demo Reveal](/demo)
-- [System tests](/01-system-tests)
-- [Refactoring](/02-refactoring)
+- [System tests](/slides/01-system-tests)
+- [Refactoring](/slides/02-refactoring)
+
+
+# Dump
+- [Blank](/slides/blank)
+- [Demo Reveal](/slides/demo)
