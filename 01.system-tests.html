@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <title>System Tests</title>
+
+  <link rel="stylesheet" href="css/reveal.css" />
+  <link rel="stylesheet" href="css/theme/white.css" />
+
+  <!-- Theme used for syntax highlighting of code -->
+  <link rel="stylesheet" href="lib/css/zenburn.css" />
+
+  <!-- Printing and PDF exports -->
+  <script>
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = window.location.search.match(/print-pdf/gi)
+      ? "css/print/pdf.css"
+      : "css/print/paper.css";
+    document.getElementsByTagName("head")[0].appendChild(link);
+  </script>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h2>Rails system tests with Chrome</h2>
+        <ul>
+          <li class="fragment">prettier</li>
+          <li class="fragment">much better DX</li>
+          <li class="fragment">closer to reality</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Why migrate</h2>
+        <ul>
+          <li class="fragment">Rspec feature doesn't add anything</li>
+          <li class="fragment">PhantomJS is EOL</li>
+          <li class="fragment">Chrome</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Common mistakes, aka sleep&nbsp;5</h2>
+        <ul>
+          <li class="fragment">animations</li>
+          <li class="fragment">.text</li>
+          <li class="fragment">SQL requests</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Common mistakes - animations</h2>
+        <pre>
+            <code class="erb" data-trim>
+              <% if Rails.env.test? %>
+                <%= javascript_tag do %>
+                  $(document).ready(function(){
+                    $.support.transition = false; // disable Bootstrap animations
+                    $.fx.off = true; // disable jQuery animations
+                  });
+                <% end %>
+                <style>
+                  * {
+                    transition-property: none !important;
+                    transform: none !important;
+                    animation: none !important;
+                  }
+                </style>
+              <% end %>
+            </code>
+          </pre>
+      </section>
+      <section>
+        <h2>Common mistakes - .text</h2>
+        <pre>
+            <code class="ruby" data-trim>
+              expect(page.all('.shift-in-poste-view').count).to eql(2)
+              expect(employee_row.find('.week-total-num').text).to eql('09h30')
+            </code>
+          </pre>
+        <pre class="fragment">
+            <code class="ruby" data-trim>
+              assert_selector ".shift-in-poste-view", count: 2
+              find('.week-total-num').assert_text "09h30"
+              # or
+              assert_selector('.week-total-num', text: "09h30")
+            </code>
+          </pre>
+      </section>
+      <section>
+        <h2>Common mistakes - SQL</h2>
+        <p>Please don't</p>
+        <ul>
+          <li class="fragment">You can almost always test screen result</li>
+          <li class="fragment">It's the slowest way to do DB tests</li>
+          <li class="fragment">
+            You are breaking in/abstraction and testing implementation,
+            maintenance ?
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h2>Tell a story</h2>
+        <pre>
+            <code class="ruby" data-trim data-noescape>
+              login_as users(:std_user)
+              visit "/planning" # do not use helpers
+              # after redirection
+              assert_current_path("/planning?week=#{Date.today.week}")
+              # Use button/a elements for clickables, use label
+              click_on "New shift"
+              # Use correct labels, hiddens if needed
+              fill_in "Start date", with: "01/01/2013" 
+              check "Night shift" # same
+              click_on "Save"
+              binding.pry # stop test to inspect the dom in Chrome
+              # use existing selectors when expressive enough
+              assert_selector(".shift-cell", count: 1) 
+              # create new ones when needed
+              find("[data-test='alert']").assert_text "Shift created"
+            </code>
+          </pre>
+      </section>
+      <section>
+        <h2>You can use testing constraints to produce a better UX</h2>
+        <ul>
+          <li class="fragment">unique labels on the page</li>
+          <li class="fragment">labelled inputs</li>
+          <li class="fragment">
+            correct clickable elements (a/buttons)
+          </li>
+        </ul>
+        <p>If test is hard to write, work the view layer</p>
+      </section>
+      <section>
+        <h2>Ressources</h2>
+        <ul>
+          <li>https://github.com/teamcapybara/capybara</li>
+          <li>https://guides.rubyonrails.org/testing.html</li>
+          <li>
+            https://www.rubydoc.info/github/jnicklas/capybara/Capybara/Node/Matchers
+          </li>
+          <li>Preferably not SO (outdated, misleading)</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Next steps</h2>
+        <ul>
+          <li class="fragment">
+            migrate all rspec features tests to rails system tests
+          </li>
+          <li class="fragment">
+            ActionDispatch::IntegrationTest => replaces request/controller
+            tests, fast and unique API
+          </li>
+          <li class="fragment">
+            Methodically use system, request and service tests for the right
+            stuff
+          </li>
+          <li class="fragment">
+            faster app will lead to faster tests
+          </li>
+          <li class="fragment">long game, don't despair</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <script src="lib/js/head.min.js"></script>
+  <script src="js/reveal.js"></script>
+
+  <script>
+    // More info about config & dependencies:
+    // - https://github.com/hakimel/reveal.js#configuration
+    // - https://github.com/hakimel/reveal.js#dependencies
+    Reveal.initialize({
+      dependencies: [
+        { src: "plugin/markdown/marked.js" },
+        { src: "plugin/markdown/markdown.js" },
+        { src: "plugin/notes/notes.js", async: true },
+        {
+          src: "plugin/highlight/highlight.js",
+          async: true,
+          callback: function () {
+            hljs.initHighlightingOnLoad();
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+
+</html>
